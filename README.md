@@ -29,3 +29,22 @@ git check-attr filter -- WA1_400L/meshes/BASE.STL
 
 `git lfs ls-files` 应列出 `WA1_400L/meshes/` 下的模型，属性检查应返回 `filter: lfs`。
 如果模型文件仍以 `version https://git-lfs.github.com/spec/v1` 开头，说明 LFS 对象尚未下载成功。
+
+## 生成配置和 MJCF
+
+项目环境统一由 `uv` 管理，使用 Python 3.11、PyYAML 和 MuJoCo。首次创建并激活环境：
+
+```bash
+uv venv --python 3.11 .venv
+source .venv/bin/activate
+uv pip install PyYAML mujoco
+```
+
+激活后使用 `uv` 运行转换入口：
+
+```bash
+uv run --active main.py WA1_400L --override
+uv run --active main.py WA1_400L --convert
+```
+
+第一条命令从 `WA1_400L.urdf` 生成 `WA1_400L/robot_cfg.yaml`；已有配置默认会被复用，只有传入 `--override` 才会重新生成。第二条命令生成 `WA1_400L/WA1_400L.xml` 和配套的 `scene.xml`，生成的 MJCF 可直接由 MuJoCo 加载。

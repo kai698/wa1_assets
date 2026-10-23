@@ -1,0 +1,108 @@
+# robot_name: must match the asset directory and URDF robot name
+robot_name: WA1_400L
+# total_mass: sum of URDF link inertial mass values in kg
+total_mass: 184.2498
+# root_link: link directly connected to the free/floating joint
+root_link: BASE
+# root_height: root_link z distance to the lowest collision geometry at init pose
+root_height: 0.2766
+# Numeric formatting: values use decimal text for readability; lengths and masses are in SI units.
+# init_state: nominal pose used when initializing the floating-base model
+init_state:
+  # root_pos.z: root_height + 20mm nominal clearance
+  root_pos: [0,  0,  0.2966]
+  # root_rot quaternion format: [x, y, z, w]
+  root_rot: [0,  0,  0,  1]
+  # joint_pos: initial position for every movable URDF joint, in joint order
+  joint_pos:
+    Lifting_Z: 0
+    Waist_Z: 0
+    Waist_Y: 0
+    Shoulder_Y_L: 0
+    Shoulder_X_L: 0
+    Shoulder_Z_L: 0
+    Elbow_L: 0
+    Wrist_Z_L: 0
+    Wrist_Y_L: 0
+    Wrist_X_L: 0
+    Shoulder_Y_R: 0
+    Shoulder_X_R: 0
+    Shoulder_Z_R: 0
+    Elbow_R: 0
+    Wrist_Z_R: 0
+    Wrist_Y_R: 0
+    Wrist_X_R: 0
+    Neck_Z: 0
+    Neck_Y: 0
+    Left_Front_Turn: 0
+    Left_Front_Roll: 0
+    Right_Front_Turn: 0
+    Right_Front_Roll: 0
+    Left_Back_Turn: 0
+    Left_Back_Roll: 0
+    Right_Back_Turn: 0
+    Right_Back_Roll: 0
+    Left_Roll: 0
+    Right_Roll: 0
+# ref_joint_order: movable URDF joint order used by downstream consumers; do not reorder manually
+ref_joint_order:
+  - Lifting_Z
+  - Waist_Z
+  - Waist_Y
+  - Shoulder_Y_L
+  - Shoulder_X_L
+  - Shoulder_Z_L
+  - Elbow_L
+  - Wrist_Z_L
+  - Wrist_Y_L
+  - Wrist_X_L
+  - Shoulder_Y_R
+  - Shoulder_X_R
+  - Shoulder_Z_R
+  - Elbow_R
+  - Wrist_Z_R
+  - Wrist_Y_R
+  - Wrist_X_R
+  - Neck_Z
+  - Neck_Y
+  - Left_Front_Turn
+  - Left_Front_Roll
+  - Right_Front_Turn
+  - Right_Front_Roll
+  - Left_Back_Turn
+  - Left_Back_Roll
+  - Right_Back_Turn
+  - Right_Back_Roll
+  - Left_Roll
+  - Right_Roll
+# ref_link_order: link order corresponding to ref_joint_order; do not reorder manually
+ref_link_order:
+  - BODY
+  - WAIST_YAW
+  - WAIST_PITCH
+  - SCAPULA_L
+  - SHOULDER_L
+  - UPPERARM_L
+  - FOREARM_L
+  - WRIST_REVOLUTE_L
+  - WRIST_UPDOWN_L
+  - WRIST_FLANGE_L
+  - SCAPULA_R
+  - SHOULDER_R
+  - UPPERARM_R
+  - FOREARM_R
+  - WRIST_REVOLUTE_R
+  - WRIST_UPDOWN_R
+  - WRIST_FLANGE_R
+  - NECK
+  - HEAD
+  - LEFT_FRONT_TURN_WHEEL
+  - LEFT_FRONT_ROLL_WHEEL
+  - RIGHT_FRONT_TURN_WHEEL
+  - RIGHT_FRONT_ROLL_WHEEL
+  - LEFT_BACK_TURN_WHEEL
+  - LEFT_BACK_ROLL_WHEEL
+  - RIGHT_BACK_TURN_WHEEL
+  - RIGHT_BACK_ROLL_WHEEL
+  - LEFT_ROLL_WHEEL
+  - RIGHT_ROLL_WHEEL
