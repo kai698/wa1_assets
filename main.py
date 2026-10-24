@@ -14,6 +14,9 @@ ROOT = Path(__file__).resolve().parent
 DEFAULT_CFG_PATH = ROOT / "default_cfg.yaml"
 DEFAULT_CFG = yaml.safe_load(DEFAULT_CFG_PATH.read_text(encoding="utf-8"))
 DEFAULT_INIT_STATE = copy.deepcopy(DEFAULT_CFG["init_state"])
+ACTUATED_JOINT_DEFAULTS = list(DEFAULT_CFG["joint_defaults"]["normal"])
+JOINT_CONFIG_FIELDS = ("type", "Tm", "Vm", "kp", "kd", "arma", "fric", "damp")
+JOINT_CONFIG_INDEX = {field: index for index, field in enumerate(JOINT_CONFIG_FIELDS)}
 
 
 def load_default_cfg() -> dict:
@@ -73,6 +76,48 @@ def _float(value: str | None, default: float = 0.0) -> float:
         return default
 
 
+def _joint_limit(joint: ET.Element, name: str, default: float = 0.0) -> float:
+    limit = next((child for child in joint if child.tag.rsplit("}", 1)[-1] == "limit"), None)
+    if limit is None:
+        return default
+    return _float(limit.get(name), default)
+
+
+def parse_joint_config(values: object, context: str = "joint config") -> dict[str, object]:
+    if not isinstance(values, (list, tuple)) or len(values) != len(JOINT_CONFIG_FIELDS):
+        raise RuntimeError(f"{context} must contain {len(JOINT_CONFIG_FIELDS)} values")
+    if not isinstance(values[JOINT_CONFIG_INDEX["type"]], str):
+        raise RuntimeError(f"{context}.type must be a string")
+    parsed: dict[str, object] = {"type": values[JOINT_CONFIG_INDEX["type"]]}
+    try:
+        for field in JOINT_CONFIG_FIELDS[1:]:
+            parsed[field] = float(values[JOINT_CONFIG_INDEX[field]])
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(f"{context} contains non-numeric parameters") from exc
+    return parsed
+
+
+def format_scalar(value: object) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        precision = 6 if 0 < abs(value) < 1e-3 else 4
+        rendered = f"{value:.{precision}f}".rstrip("0").rstrip(".")
+        return "0" if rendered in {"", "-0"} else rendered
+    return str(value)
+
+
+def build_joint_config(joint: ET.Element) -> list[object]:
+    config = list(ACTUATED_JOINT_DEFAULTS)
+    if config[JOINT_CONFIG_INDEX["Tm"]] != 0:
+        config[JOINT_CONFIG_INDEX["Tm"]] = _joint_limit(joint, "effort", float(config[JOINT_CONFIG_INDEX["Tm"]]))
+    if config[JOINT_CONFIG_INDEX["Vm"]] != 0:
+        config[JOINT_CONFIG_INDEX["Vm"]] = _joint_limit(joint, "velocity", float(config[JOINT_CONFIG_INDEX["Vm"]]))
+    return config
+
+
 def parse_robot_config(root: ET.Element, asset_name: str) -> dict:
     links = robot_children(root, "link")
     link_names = [link.get("name", "") for link in links]
@@ -87,21 +132,28 @@ def parse_robot_config(root: ET.Element, asset_name: str) -> dict:
     )
     init_state = copy.deepcopy(DEFAULT_INIT_STATE)
     init_state["joint_pos"] = {name: 0 for name in ref_joints}
+    actuated_joints = {}
+    for joint in movable:
+        name = joint.get("name")
+        if not name or _joint_limit(joint, "effort") == 0:
+            continue
+        actuated_joints[name] = build_joint_config(joint)
     return {
         "robot_name": asset_name,
         "total_mass": round(total_mass, 4),
         "root_link": root_link,
         "root_height": 0,
         "init_state": init_state,
+        "actuated_joints": actuated_joints,
+        "policy_joint_names": list(actuated_joints),
         "ref_joint_order": ref_joints,
         "ref_link_order": ref_links,
-        "mujoco": load_default_cfg()["mujoco"],
     }
 
 
 def build_yaml(config: dict) -> str:
     def flow(values: list[object]) -> str:
-        return "[" + ",  ".join(str(value) for value in values) + "]"
+        return "[" + ",  ".join(format_scalar(value) for value in values) + "]"
 
     init_state = config["init_state"]
     lines = [
@@ -124,9 +176,19 @@ def build_yaml(config: dict) -> str:
         "  joint_pos:",
     ]
     lines.extend(f"    {name}: {value}" for name, value in init_state["joint_pos"].items())
-    lines.extend(["# ref_joint_order: movable URDF joint order used by downstream consumers; do not reorder manually", "ref_joint_order:"])
+    lines.extend(
+        [
+            "actuated_joints:",
+            "  #          [   type,   Tm,   Vm, kp, kd, arma, fric, damp]",
+        ]
+    )
+    for name, values in config["actuated_joints"].items():
+        lines.append(f"  {name}: {flow(values)}")
+    lines.extend(["# WARNING: DO NOT MODIFY", "policy_joint_names:"])
+    lines.extend(f"  - {name}" for name in config["policy_joint_names"])
+    lines.extend(["# WARNING: DO NOT MODIFY", "ref_joint_order:"])
     lines.extend(f"  - {name}" for name in config["ref_joint_order"])
-    lines.extend(["# ref_link_order: link order corresponding to ref_joint_order; do not reorder manually", "ref_link_order:"])
+    lines.extend(["# WARNING: DO NOT MODIFY", "ref_link_order:"])
     lines.extend(f"  - {name}" for name in config["ref_link_order"])
     return "\n".join(lines) + "\n"
 

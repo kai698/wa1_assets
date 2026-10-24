@@ -14,6 +14,7 @@ from main import (
     DEFAULT_INIT_STATE,
     load_default_cfg,
     load_robot_config,
+    parse_joint_config,
     remove_fixed_joint_axes,
     resolve_asset_dir,
     robot_children,
@@ -122,23 +123,31 @@ def _joint_dof_range(model, joint_id: int) -> range:
     return range(dof_start, dof_end)
 
 
-def _joint_params(urdf_path: Path) -> dict[str, dict[str, float]]:
-    """Use URDF limits and conservative defaults for WA1's serial joints."""
-    root = ET.parse(urdf_path).getroot()
+def _joint_params(config: dict, urdf_path: Path) -> dict[str, dict[str, float]]:
+    """Read actuator parameters from robot_cfg.yaml's actuated_joints mapping."""
+    actuated_joints = config.get("actuated_joints")
+    if not isinstance(actuated_joints, dict):
+        raise RuntimeError("robot config must define actuated_joints as a mapping")
+
+    urdf_root = ET.parse(urdf_path).getroot()
+    urdf_joints = {
+        joint.get("name")
+        for joint in robot_children(urdf_root, "joint")
+        if joint.get("name") and joint.get("type") not in {"fixed", "floating"}
+    }
+    unknown_joints = sorted(set(actuated_joints) - urdf_joints)
+    if unknown_joints:
+        raise RuntimeError(f"actuated_joints contains joints missing from URDF: {unknown_joints}")
+
     params: dict[str, dict[str, float]] = {}
-    for joint in robot_children(root, "joint"):
-        name = joint.get("name")
-        if not name or joint.get("type") in {"fixed", "floating"}:
-            continue
-        limit = next((child for child in joint if child.tag.rsplit("}", 1)[-1] == "limit"), None)
-        effort = float(limit.get("effort", 0)) if limit is not None else 0.0
-        velocity = float(limit.get("velocity", 0)) if limit is not None else 0.0
+    for name, values in actuated_joints.items():
+        parsed = parse_joint_config(values, f"actuated_joints.{name}")
         params[name] = {
-            "Tm": effort,
-            "Vm": velocity,
-            "arma": 0.005,
-            "static_friction": 0.01,
-            "viscous_friction": 0.01,
+            "type": parsed["type"],
+            "Tm": parsed["Tm"],
+            "arma": parsed["arma"],
+            "static_friction": parsed["fric"],
+            "viscous_friction": parsed["damp"],
         }
     return params
 
@@ -153,7 +162,7 @@ def convert_urdf_to_mjcf(
 
     if config is None:
         config = load_robot_config(asset_dir)
-    joint_params = _joint_params(urdf_path)
+    joint_params = _joint_params(config, urdf_path)
 
     xml_path = asset_dir / f"{urdf_path.stem}.xml"
     import_urdf_path = _write_import_urdf(
@@ -169,7 +178,7 @@ def convert_urdf_to_mjcf(
         for joint_name, params in joint_params.items():
             joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
             if joint_id < 0:
-                continue
+                raise RuntimeError(f"actuated joint {joint_name!r} is missing from imported MuJoCo model")
             for dof_id in _joint_dof_range(model, joint_id):
                 model.dof_armature[dof_id] = params["arma"]
                 # MuJoCo represents velocity-proportional friction as damping
@@ -219,6 +228,10 @@ def convert_urdf_to_mjcf(
         if not name or name not in joint_params:
             continue
         params = joint_params[name]
+        if params["type"] != "generic":
+            raise RuntimeError(
+                f"unsupported actuator type {params['type']!r} for joint {name!r}; expected 'generic'"
+            )
         joint.set("armature", _format_attr_value(params["arma"]))
         joint.set("damping", _format_attr_value(params["viscous_friction"]))
         joint.set("frictionloss", _format_attr_value(params["static_friction"]))

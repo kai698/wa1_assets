@@ -4,11 +4,16 @@ init_state:
   joint_pos:
     ".*": 0
 
+joint_defaults:
+        # Defaults for actuated joints: [type, Tm, Vm, kp, kd, arma, fric, damp]
+  normal: [generic, 300, 30, 50, 4, 0.01, 0.01, 0.01]
+
 mujoco:
   compiler:
     balanceinertia: false
     discardvisual: false
   default_joint:
+    # Defaults for ordinary MuJoCo joints not listed in actuated_joints.
     armature: 0.005
     damping: 0.01
     frictionloss: 0.01

@@ -19,15 +19,15 @@ init_state:
     Waist_Z: 0
     Waist_Y: 0
     Shoulder_Y_L: 0
-    Shoulder_X_L: 0
-    Shoulder_Z_L: 0
+    Shoulder_X_L: 0.436
+    Shoulder_Z_L: 0.524
     Elbow_L: 0
     Wrist_Z_L: 0
     Wrist_Y_L: 0
     Wrist_X_L: 0
     Shoulder_Y_R: 0
-    Shoulder_X_R: 0
-    Shoulder_Z_R: 0
+    Shoulder_X_R: -0.436
+    Shoulder_Z_R: -0.524
     Elbow_R: 0
     Wrist_Z_R: 0
     Wrist_Y_R: 0
@@ -44,7 +44,53 @@ init_state:
     Right_Back_Roll: 0
     Left_Roll: 0
     Right_Roll: 0
-# ref_joint_order: movable URDF joint order used by downstream consumers; do not reorder manually
+actuated_joints:
+  #          [   type,   Tm,   Vm, kp, kd, arma, fric, damp]
+  Lifting_Z: [generic,  6780,  0.05,  50,  4,  0.01,  0.01,  0.01]
+  Waist_Z: [generic,  290,  2.618,  50,  4,  0.01,  0.01,  0.01]
+  Waist_Y: [generic,  290,  2.618,  50,  4,  0.01,  0.01,  0.01]
+  Shoulder_Y_L: [generic,  57,  3.56,  50,  4,  0.01,  0.01,  0.01]
+  Shoulder_X_L: [generic,  57,  3.56,  50,  4,  0.01,  0.01,  0.01]
+  Shoulder_Z_L: [generic,  57,  3.56,  50,  4,  0.01,  0.01,  0.01]
+  Elbow_L: [generic,  31,  3.66,  50,  4,  0.01,  0.01,  0.01]
+  Wrist_Z_L: [generic,  25,  3.66,  50,  4,  0.01,  0.01,  0.01]
+  Wrist_Y_L: [generic,  16,  3.66,  50,  4,  0.01,  0.01,  0.01]
+  Wrist_X_L: [generic,  16,  3.66,  50,  4,  0.01,  0.01,  0.01]
+  Shoulder_Y_R: [generic,  57,  3.56,  50,  4,  0.01,  0.01,  0.01]
+  Shoulder_X_R: [generic,  57,  3.56,  50,  4,  0.01,  0.01,  0.01]
+  Shoulder_Z_R: [generic,  57,  3.56,  50,  4,  0.01,  0.01,  0.01]
+  Elbow_R: [generic,  31,  3.66,  50,  4,  0.01,  0.01,  0.01]
+  Wrist_Z_R: [generic,  25,  3.66,  50,  4,  0.01,  0.01,  0.01]
+  Wrist_Y_R: [generic,  16,  3.66,  50,  4,  0.01,  0.01,  0.01]
+  Wrist_X_R: [generic,  16,  3.66,  50,  4,  0.01,  0.01,  0.01]
+  Neck_Z: [generic,  7,  3.66,  50,  4,  0.01,  0.01,  0.01]
+  Neck_Y: [generic,  7,  3.66,  50,  4,  0.01,  0.01,  0.01]
+  Left_Roll: [generic,  28.65,  27.227,  50,  4,  0.01,  0.01,  0.01]
+  Right_Roll: [generic,  28.65,  27.227,  50,  4,  0.01,  0.01,  0.01]
+# WARNING: DO NOT MODIFY
+policy_joint_names:
+  - Lifting_Z
+  - Waist_Z
+  - Waist_Y
+  - Shoulder_Y_L
+  - Shoulder_X_L
+  - Shoulder_Z_L
+  - Elbow_L
+  - Wrist_Z_L
+  - Wrist_Y_L
+  - Wrist_X_L
+  - Shoulder_Y_R
+  - Shoulder_X_R
+  - Shoulder_Z_R
+  - Elbow_R
+  - Wrist_Z_R
+  - Wrist_Y_R
+  - Wrist_X_R
+  - Neck_Z
+  - Neck_Y
+  - Left_Roll
+  - Right_Roll
+# WARNING: DO NOT MODIFY
 ref_joint_order:
   - Lifting_Z
   - Waist_Z
@@ -75,7 +121,7 @@ ref_joint_order:
   - Right_Back_Roll
   - Left_Roll
   - Right_Roll
-# ref_link_order: link order corresponding to ref_joint_order; do not reorder manually
+# WARNING: DO NOT MODIFY
 ref_link_order:
   - BODY
   - WAIST_YAW
